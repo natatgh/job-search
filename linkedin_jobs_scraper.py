@@ -6,8 +6,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import sqlite3
-import subprocess
-from bs4 import BeautifulSoup
 
 def linkedin_login(driver, username, password):
     driver.get("https://www.linkedin.com/login")
@@ -20,64 +18,57 @@ def linkedin_login(driver, username, password):
     password_field.send_keys(Keys.RETURN)
     time.sleep(3)
 
-def save_job_to_db(job):
+def create_job_links_table():
     conn = sqlite3.connect('jobs.db')
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO jobs (title, company, location, link, description)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (job['title'], job['company'], job['location'], job['link'], job['description']))
+        CREATE TABLE IF NOT EXISTS job_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link TEXT NOT NULL
+        )
+    ''')
 
     conn.commit()
     conn.close()
 
-def get_job_description(driver):
-    try:
-        description_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.jobs-box__html-content.jobs-description-content__text"))
-        )
-        description_html = description_element.get_attribute("outerHTML")
-        soup = BeautifulSoup(description_html, 'html.parser')
-        description = soup.prettify()
-        return description
-    except Exception as e:
-        print("Erro ao extrair a descrição da vaga:", e)
-        return ""
+def save_job_link_to_db(job_link):
+    conn = sqlite3.connect('jobs.db')
+    cursor = conn.cursor()
 
-def extract_jobs(driver):
-    job_data = []
-    jobs = driver.find_elements(By.CSS_SELECTOR, "ul.scaffold-layout__list-container li")
+    cursor.execute('''
+        INSERT INTO job_links (link)
+        VALUES (?)
+    ''', (job_link,))
 
-    for job in jobs:
+    conn.commit()
+    conn.close()
+
+def extract_jobs_html(driver):
+    job_elements = driver.find_elements(By.CSS_SELECTOR, "ul.scaffold-layout__list-container li")
+
+    for index, job_element in enumerate(job_elements):
         try:
-            print("Debug: Extraindo dados da vaga") 
-            title_element = job.find_element(By.CSS_SELECTOR, "h3")
-            company_element = job.find_element(By.CSS_SELECTOR, "h4")
-            location_element = job.find_element(By.CSS_SELECTOR, "span.job-search-card__location")
-            link_element = job.find_element(By.CSS_SELECTOR, "a").get_attribute('href')
+            print(f"Debug: Extraindo HTML da vaga {index + 1}")
+            job_html = job_element.get_attribute('outerHTML')
+            print(job_html)
 
-            title = title_element.text
-            company = company_element.text
-            location = location_element.text
-            link = link_element
-
-            job.click()  # Clica na vaga para abrir a descrição
-            time.sleep(2)  # Espera para a descrição carregar
-
-            description = get_job_description(driver)
-
-            print(f"Debug: Dados extraídos - Title: {title}, Company: {company}, Location: {location}, Link: {link}")
-            job_data.append({"title": title, "company": company, "location": location, "link": link, "description": description})
-            save_job_to_db({"title": title, "company": company, "location": location, "link": link, "description": description})
+            try:
+                # Aumentar o tempo de espera para garantir que o elemento esteja carregado
+                job_link_element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.job-card-container__link.job-card-list__title.job-card-list__title--link"))
+                )
+                job_link = job_link_element.get_attribute("href")
+                print(f"Link da vaga {index + 1}: {job_link}")
+                save_job_link_to_db(job_link)
+            except Exception as e:
+                print(f"Link da vaga {index + 1} não encontrado: {e}")
         except Exception as e:
-            print("Erro ao extrair dados da vaga:", e)
-
-    return job_data
+            print(f"Erro ao extrair HTML da vaga {index + 1}: {e}")
+            continue
 
 def main():
-    # Criar a tabela jobs antes de iniciar a raspagem
-    subprocess.run(["python", "create_tables.py"])
+    create_job_links_table()
 
     search_keyword = "Python"  # Palavra-chave de busca
     linkedin_url = f"https://www.linkedin.com/jobs/search/?keywords={search_keyword}&origin=JOBS_HOME_SEARCH_BUTTON&refresh=true"
@@ -98,15 +89,12 @@ def main():
     time.sleep(3)
 
     while True:
-        job_data = extract_jobs(driver)
-
-        for job in job_data:
-            print(f"Title: {job['title']}\nCompany: {job['company']}\nLocation: {job['location']}\nLink: {job['link']}\nDescription: {job['description']}\n")
+        extract_jobs_html(driver)
 
         try:
-            next_button = driver.find_element(By.CSS_SELECTOR, "button.jobs-search-pagination__button--next")
-            if not next_button.is_enabled():
-                break
+            next_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.jobs-search-pagination__button--next"))
+            )
             next_button.click()
             time.sleep(3)
         except Exception as e:
