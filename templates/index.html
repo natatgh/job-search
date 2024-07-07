@@ -1,75 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Listings</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .job-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .job-item {
-            background-color: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-        .job-item h2 {
-            margin-bottom: 10px;
-        }
-        .job-description {
-            display: none;
-            margin-top: 20px;
-        }
-        .btn-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <meta name="description" content="Find the latest job listings and apply directly through our platform.">
+    <meta name="keywords" content="jobs, job listings, careers, employment">
+    <meta name="author" content="Your Company Name">
 </head>
+
 <body>
-    <div class="container">
-        <h1 class="my-4">Job Listings</h1>
-        <ul class="job-list">
-            {% for job in jobs %}
-            <li class="job-item" data-job-id="{{ job[0] }}">
-                <h2>{{ job[1] }}</h2>
-                <p><strong>Company:</strong> {{ job[2] }}</p>
-                <p><strong>Location:</strong> {{ job[3] }}</p>
-                <div class="btn-container">
-                    <button class="btn btn-secondary toggle-description">Ler mais</button>
-                    <a href="{{ job[4] }}" target="_blank" class="btn btn-primary">Candidatar-se</a>
-                </div>
-                <div class="job-description">
-                    {{ job[5] | safe }}
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
+    <h1>Job Listings</h1>
+    <div class="job-listings">
+        {% for job in jobs %}
+        <div class="job-listing" role="region" aria-labelledby="job-title-{{ job[0] }}">
+            <div class="job-header">
+                <h2 id="job-title-{{ job[0] }}">{{ job[1] }}</h2>
+                {% if job[6] != 'Logotipo não encontrado' %}
+                <img src="{{ job[6] }}" alt="Company Logo">
+                {% endif %}
+            </div>
+            <p><strong>Company:</strong> {{ job[2] }}</p>
+            <p><strong>Location:</strong> {{ job[3] }}</p>
+            <p><strong>Tags:</strong> {{ job[7] }}</p> <!-- Exibir as tags aqui -->
+            <div class="buttons">
+                <a href="{{ job[4] }}" target="_blank" class="button view-button" aria-label="View Job">View Job</a>
+                <button onclick="toggleDescription('{{ job[0] }}');" class="button description-button" aria-expanded="false" aria-controls="description-{{ job[0] }}">View Description</button>
+            </div>
+            <div id="description-{{ job[0] }}" class="description" style="display: none;">
+                {{ job[5]|safe }}
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
-        $(document).ready(function() {
-            $('.toggle-description').click(function() {
-                var description = $(this).closest('.job-item').find('.job-description');
-                $('.job-description').not(description).slideUp();
-                description.slideToggle();
-                $(this).text($(this).text() === 'Ler mais' ? 'Ler menos' : 'Ler mais');
-            });
-        });
+        function toggleDescription(jobId) {
+            var desc = document.getElementById('description-' + jobId);
+            var button = document.querySelector(`[aria-controls='description-${jobId}']`);
+            if (desc.style.display === "none") {
+                desc.style.display = "block";
+                button.setAttribute('aria-expanded', 'true');
+                removeShowButtons(desc);
+            } else {
+                desc.style.display = "none";
+                button.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function removeShowButtons(container) {
+            var showMoreButton = container.querySelector('.show-more-less-html__button--more');
+            var showLessButton = container.querySelector('.show-more-less-html__button--less');
+            if (showMoreButton) showMoreButton.style.display = 'none';
+            if (showLessButton) showLessButton.style.display = 'none';
+        }
     </script>
 </body>
+
 </html>
