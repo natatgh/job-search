@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from scraping import buscar_vagas
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 CORS(app)  # Habilita CORS para todas as rotas
 
 @app.route('/search', methods=['POST'])

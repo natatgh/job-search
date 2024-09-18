@@ -42,7 +42,7 @@ document.getElementById('job-search-form').addEventListener('submit', function(e
     });
 });
 
-// Função para exibir vagas
+// Função para exibir as vagas com estilo melhorado
 function displayJobs(jobs) {
     const resultsDiv = document.getElementById('job-results');
     resultsDiv.innerHTML = '';  // Limpa os resultados anteriores
@@ -54,22 +54,59 @@ function displayJobs(jobs) {
 
     jobs.forEach(job => {
         const jobElement = document.createElement('div');
+        jobElement.classList.add('job-card');
+
+        // Extrai o tipo de contrato e modalidade de trabalho a partir da descrição
+        const tipoContrato = job.descricao.includes('Efetivo') ? 'Efetivo' : 'Freelancer';  // Exemplo básico
+        const modalidadeTrabalho = job.descricao.includes('Remoto') ? 'Remoto' : 'Presencial';  // Exemplo básico
+
         jobElement.innerHTML = `
-            <h3>${job.titulo}</h3>
-            <p>Empresa: ${job.empresa}</p>
-            <p>Descrição: ${job.descricao}</p>
-            <a href="${job.link}" target="_blank">Ver detalhes</a>
+            <div class="job-header">
+                <div class="icon-frame">
+                    <i class="fi fi-ss-building"></i> <!-- Ícone do prédio -->
+                </div>
+                <div class="job-company">
+                    <p>${job.empresa}</p>
+                </div>
+            </div>
+            <div class="job-content">
+                <div class="job-title">
+                    <i class="fi fi-sc-briefcase"></i> ${job.titulo} <!-- Ícone da maleta -->
+                </div>
+                <div class="job-labels">
+                    <span class="job-type">
+                        <i class="fi fi-ss-briefcase"></i> ${tipoContrato} <!-- Ícone para tipo de contrato -->
+                    </span>
+                    <span class="job-modality">
+                        <i class="fi fi-ss-building"></i> ${modalidadeTrabalho} <!-- Ícone para modalidade -->
+                    </span>
+                </div>
+                <div class="job-description short">
+                    ${job.descricao.substring(0, 100)}... <!-- Mostra uma prévia curta -->
+                </div>
+                <button class="see-more">Ver mais</button>
+                <button href="${job.link}" target="_blank" class="job-link">Acessar Vaga</button>
+            </div>
         `;
+
+        // Adiciona evento para expandir a descrição
+        const seeMoreBtn = jobElement.querySelector('.see-more');
+        const descriptionDiv = jobElement.querySelector('.job-description');
+
+        seeMoreBtn.addEventListener('click', function() {
+            if (descriptionDiv.classList.contains('short')) {
+                descriptionDiv.classList.remove('short');
+                descriptionDiv.innerHTML = job.descricao;  // Mostra a descrição completa
+                seeMoreBtn.innerText = 'Ver menos';
+            } else {
+                descriptionDiv.classList.add('short');
+                descriptionDiv.innerHTML = `${job.descricao.substring(0, 100)}...`;  // Mostra descrição curta novamente
+                seeMoreBtn.innerText = 'Ver mais';
+            }
+        });
+
         resultsDiv.appendChild(jobElement);
     });
-
-    // Verifica se há mais vagas para mostrar e exibe o botão "Ver mais"
-    if (currentIndex + jobsPerPage < allJobs.length) {
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.textContent = 'Ver mais vagas';
-        loadMoreBtn.addEventListener('click', loadMoreJobs);
-        resultsDiv.appendChild(loadMoreBtn);
-    }
 }
 
 // Função para carregar mais vagas ao clicar em "Ver mais vagas"

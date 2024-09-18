@@ -90,7 +90,7 @@ Este projeto é um sistema de busca de vagas de emprego que realiza scraping de 
 - Deploy da aplicação em um servidor online (como Heroku ou AWS).
 
 ## Contribuição
-
+ 
 Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests no GitHub.
 
 ## Licença
